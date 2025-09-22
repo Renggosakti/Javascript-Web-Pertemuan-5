@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>Aplikasi Registrasi Mahasiswa</title>
+  <style>
+    body { font-family: 'Segoe UI', sans-serif; background: linear-gradient(135deg,#667eea,#764ba2); min-height:100vh; display:flex; align-items:center; justify-content:center; margin:0; }
+    .card { background:#fff; padding:25px; border-radius:15px; box-shadow:0 10px 25px rgba(0,0,0,0.2); width:450px; animation:fadeIn 0.6s ease-in-out; }
+    h2 { text-align:center; margin-bottom:20px; color:#4a4a4a; }
+    label { font-size:14px; font-weight:bold; margin-bottom:5px; display:block; color:#333; }
+    input,select,button { width:100%; padding:10px; margin-bottom:12px; border:1px solid #ddd; border-radius:8px; font-size:14px; outline:none; transition:0.3s; }
+    input:focus,select:focus{ border-color:#667eea; box-shadow:0 0 5px rgba(102,126,234,0.6); }
+    button{ background:#667eea; color:white; font-weight:bold; cursor:pointer; }
+    button:hover{ background:#5563c1; }
+    .error { color:red; font-size:12px; margin:-8px 0 10px 0; }
+    .logout { background:#e74c3c; margin-top:5px; }
+    .logout:hover { background:#c0392b; }
+    .cardResult{ background:#e6f7ef; border-left:6px solid #2ecc71; padding:12px; margin-bottom:10px; border-radius:6px; }
+    .cardResult strong{ color:#2b9348; }
+    @keyframes fadeIn{ from{opacity:0; transform:translateY(-20px);} to{opacity:1; transform:translateY(0);} }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div id="loginPage">
+      <h2>Login</h2>
+      <label>Email</label>
+      <input type="email" id="email" placeholder="Masukkan email">
+      <p id="errEmail" class="error"></p>
+      <label>Password</label>
+      <input type="password" id="password" placeholder="Bebas isi apa saja">
+      <button onclick="login()">Login</button>
+    </div>
+
+    <!-- REGISTRASI -->
+    <div id="regPage" style="display:none;">
+      <h2>Form Registrasi Mahasiswa</h2>
+      <label>Nama</label>
+      <input type="text" id="nama"><p id="errNama" class="error"></p>
+
+      <label>NRP</label>
+      <input type="text" id="nrp"><p id="errNrp" class="error"></p>
+
+      <label>Kelas</label>
+      <select id="kelas" onchange="loadDosen()">
+        <option value="">-- Pilih Kelas --</option>
+        <option>PBO</option>
+        <option>PWEB</option>
+        <option>Teori Graf</option>
+        <option>Matdis</option>
+      </select><p id="errKelas" class="error"></p>
+
+      <label>Jenis Kelamin</label>
+      <select id="gender">
+        <option value="">-- Pilih Gender --</option>
+        <option>Laki-laki</option>
+        <option>Perempuan</option>
+      </select><p id="errGender" class="error"></p>
+
+      <label>Tahun Ajaran</label>
+      <select id="tahun">
+        <option value="">-- Pilih Tahun --</option>
+        <option>2023/2024</option>
+        <option>2024/2025</option>
+        <option>2025/2026</option>
+      </select><p id="errTahun" class="error"></p>
+
+      <label>Dosen</label>
+      <select id="dosen"></select><p id="errDosen" class="error"></p>
+
+      <button onclick="submitReg()">Submit</button>
+      <button class="logout" onclick="resetApp()">Logout</button>
+    </div>
+
+    <!-- KODE POS -->
+    <div id="kodePosPage" style="display:none;">
+      <h2>Pencarian Kode Pos</h2>
+      <label>Provinsi</label>
+      <select id="provinsi" onchange="loadKota()">
+        <option value="">-- Pilih Provinsi --</option>
+        <option>Jawa Timur</option>
+        <option>Jawa Tengah</option>
+      </select>
+
+      <label>Kota/Kabupaten</label>
+      <select id="kota" onchange="loadKecamatan()"></select>
+
+      <label>Kecamatan</label>
+      <select id="kecamatan"></select>
+
+      <button onclick="cariKodePos()">Cari</button>
+      <div id="hasil"></div>
+      <button class="logout" onclick="resetApp()">Logout</button>
+    </div>
+
+    <div id="produkPage" style="display:none;">
+      <h2>List Dropdown Produk</h2>
+      <label>Jenis Produk</label>
+      <select id="produk" onchange="loadMerk()">
+        <option value="">-- Pilih Produk --</option>
+        <option>Laptop</option>
+        <option>HP</option>
+        <option>TV</option>
+      </select>
+
+      <label>Merek</label>
+      <select id="merk"></select>
+
+      <button onclick="finish()">Simpan Pilihan</button>
+      <button class="logout" onclick="resetApp()">Logout</button>
+    </div>
+    
+    <div id="donePage" style="display:none;">
+      <h2>Terima kasih!</h2>
+      <p>Semua data berhasil disimpan.</p>
+      <button onclick="resetApp()">Kembali ke Login</button>
+    </div>
+  </div>
+
+<script>
+  const dosenKelas = {
+    "PBO": ["Rully Soelaiman, S.Kom,M.Kom."],
+    "PWEB": ["Fajar Baskoro, S.Kom., MT."],
+    "Teori Graf": ["Royyana Muslim Ijtihadie, S.Kom.,M.Kom., Ph.D"],
+    "Matdis": ["Royyana Muslim Ijtihadie, S.Kom.,M.Kom., Ph.D","Rully Soelaiman, S.Kom,M.Kom."]
+  };
+
+  function loadDosen(){
+    let kelas=document.getElementById("kelas").value;
+    let dosen=document.getElementById("dosen");
+    dosen.innerHTML="<option value=''>-- Pilih Dosen --</option>";
+    if(kelas && dosenKelas[kelas]){
+      dosenKelas[kelas].forEach(d=>{ dosen.innerHTML+=`<option>${d}</option>`; });
+    }
+  }
+
+  function login(){
+    let email=document.getElementById("email").value;
+    let pass=document.getElementById("password").value;
+    if(!email.includes("@")){
+      document.getElementById("errEmail").innerText="Format email salah!";
+      return;
+    }
+    document.getElementById("errEmail").innerText="";
+    localStorage.setItem("email",email);
+    localStorage.setItem("page","regPage");
+    showPage("regPage");
+  }
+
+  function submitReg(){
+    let valid=true;
+    const fields=["nama","nrp","kelas","gender","tahun","dosen"];
+    fields.forEach(f=>{
+      let val=document.getElementById(f).value;
+      document.getElementById("err"+capitalize(f)).innerText="";
+      if(!val){ document.getElementById("err"+capitalize(f)).innerText="Field tidak boleh kosong!"; valid=false; }
+    });
+    if(!valid) return;
+
+    let data={
+      nama:document.getElementById("nama").value,
+      nrp:document.getElementById("nrp").value,
+      kelas:document.getElementById("kelas").value,
+      gender:document.getElementById("gender").value,
+      tahun:document.getElementById("tahun").value,
+      dosen:document.getElementById("dosen").value
+    };
+    localStorage.setItem("regData",JSON.stringify(data));
+    localStorage.setItem("page","kodePosPage");
+    showPage("kodePosPage");
+  }
+
+  function capitalize(str){ return str.charAt(0).toUpperCase()+str.slice(1); }
+
+  const dataKodePos={
+    "Jawa Timur":{"Surabaya":{"Tegalsari":"60262","Wonokromo":"60243"},"Malang":{"Klojen":"65111","Blimbing":"65126"}},
+    "Jawa Tengah":{"Semarang":{"Candisari":"50252","Tembalang":"50275"},"Solo":{"Banjarsari":"57137","Laweyan":"57144"}}
+  };
+
+  function loadKota(){
+    let prov=document.getElementById("provinsi").value;
+    let kota=document.getElementById("kota");
+    kota.innerHTML="<option value=''>-- Pilih Kota/Kabupaten --</option>";
+    document.getElementById("kecamatan").innerHTML="<option value=''>-- Pilih Kecamatan --</option>";
+    if(prov&&dataKodePos[prov]){ Object.keys(dataKodePos[prov]).forEach(k=>{ kota.innerHTML+=`<option>${k}</option>`; }); }
+  }
+
+  function loadKecamatan(){
+    let prov=document.getElementById("provinsi").value;
+    let kota=document.getElementById("kota").value;
+    let kec=document.getElementById("kecamatan");
+    kec.innerHTML="<option value=''>-- Pilih Kecamatan --</option>";
+    if(prov&&kota&&dataKodePos[prov][kota]){ Object.keys(dataKodePos[prov][kota]).forEach(k=>{ kec.innerHTML+=`<option>${k}</option>`; }); }
+  }
+
+  function cariKodePos(){
+    let prov=document.getElementById("provinsi").value;
+    let kota=document.getElementById("kota").value;
+    let kec=document.getElementById("kecamatan").value;
+    let hasil=document.getElementById("hasil");
+    hasil.innerHTML="";
+    if (prov && kota && kec) {
+      let kode = dataKodePos[prov][kota][kec];
+      hasil.innerHTML = `
+        <div class="cardResult">
+          <strong>Kode Pos ${kode}</strong><br>
+          Kecamatan ${kec}, ${kota}, ${prov}
+        </div>
+        <p style="color:green">Berhasil! Akan lanjut ke halaman berikutnya dalam 4 detik...</p>
+      `;
+
+      // tunggu 4 detik sebelum pindah ke halaman produk
+      setTimeout(() => {
+        localStorage.setItem("page","produkPage");
+        showPage("produkPage");
+      }, 4000);
+
+    } else {
+      hasil.innerHTML = "<p style='color:red'>Mohon lengkapi pilihan!</p>";
+    }
+  }
+
+  const merkProduk={ "Laptop":["ASUS","Acer","Lenovo"], "HP":["Samsung","Xiaomi","iPhone"], "TV":["LG","Sony","Samsung"] };
+  function loadMerk(){
+    let produk=document.getElementById("produk").value;
+    let merk=document.getElementById("merk");
+    merk.innerHTML="<option value=''>-- Pilih Merek --</option>";
+    if(produk&&merkProduk[produk]){ merkProduk[produk].forEach(m=>{ merk.innerHTML+=`<option>${m}</option>`; }); }
+  }
+
+  function finish(){
+    localStorage.setItem("page","donePage");
+    showPage("donePage");
+  }
+
+  function resetApp(){
+    localStorage.clear();
+    showPage("loginPage");
+  }
+
+  function showPage(id){
+    ["loginPage","regPage","kodePosPage","produkPage","donePage"].forEach(p=>{document.getElementById(p).style.display="none";});
+    document.getElementById(id).style.display="block";
+  }
+
+  window.onload=function(){
+    let last=localStorage.getItem("page")||"loginPage";
+    showPage(last);
+  };
+</script>
+</body>
+</html>
