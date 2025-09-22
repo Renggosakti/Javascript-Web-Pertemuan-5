@@ -73,7 +73,3 @@ Aplikasi ini melatih saya dalam:
 - Dropdown dinamis,
 - Manajemen alur multi-page tanpa reload,
 - Desain web modern yang interaktif.  
-
----
-
-## 📂 Str
